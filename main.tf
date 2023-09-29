@@ -79,7 +79,8 @@ resource "aws_route_table_association" "private_subnets_association_1" {
 }
 
 resource "aws_security_group" "jenkinsSg" {
-  name_prefix = "Jenkins-Instance-sg-"
+  name = "Jenkins-Instance-sg"
+  vpc_id = aws_vpc.vpc_1.id
 
   ingress {
     from_port   = 22
@@ -94,8 +95,14 @@ resource "aws_security_group" "jenkinsSg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-  vpc_id = aws_vpc.vpc_1.id
+  
 }
 
 resource "aws_instance" "EC2-Jenkins" {
@@ -110,16 +117,16 @@ resource "aws_instance" "EC2-Jenkins" {
   }
   vpc_security_group_ids = [aws_security_group.jenkinsSg.id]
   subnet_id              = aws_subnet.public_subnets_1[0].id
-  key_name               = aws_key_pair.ec2keypair.key_name
+  key_name               = "jenkins_ec2"
   tags = {
     Name = "Jenkins EC2 Instance"
   }
 }
 
-resource "aws_key_pair" "ec2keypair" {
-  key_name   = "ec2"
-  public_key = file("~/.ssh/ec2.pub")
-}
+# resource "aws_key_pair" "ec2keypair" {
+#   key_name   = "ec2"
+#   public_key = file("~/.ssh/ec2.pub")
+# }
 
 
 data "aws_eip" "by_tags" {
@@ -138,7 +145,7 @@ resource "aws_eip_association" "eip_jenkins_assoc" {
 # }
 
 data "aws_route53_zone" "primary" {
-  name         = var.domain_name
+  name = var.domain_name
 }
 
 resource "aws_route53_record" "jenkinsDNS" {
